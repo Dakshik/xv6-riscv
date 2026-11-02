@@ -110,3 +110,10 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+// Project 3: print current running and sleeping processes.
+uint64
+sys_crsp(void)
+{
+  return crsp();
+}

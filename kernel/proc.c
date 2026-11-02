@@ -6,6 +6,11 @@
 #include "proc.h"
 #include "defs.h"
 
+// Set to 0 to silence the per-schedule trace (Project 3, Part 1).
+#ifndef SCHED_TRACE
+#define SCHED_TRACE 1
+#endif
+
 struct cpu cpus[NCPU];
 
 struct proc proc[NPROC];
@@ -450,6 +455,10 @@ scheduler(void)
         // before jumping back to us.
         p->state = RUNNING;
         c->proc = p;
+#if SCHED_TRACE
+        // Project 3, Part 1: report which process the scheduler picked.
+        printk("process [%s:%d] is running\n", p->name, p->pid);
+#endif
         swtch(&c->context, &p->context);
 
         // Don't re-enable interrupts on release.
@@ -700,4 +709,25 @@ procdump(void)
     printk("%d %s %s", p->pid, state, p->name);
     printk("\n");
   }
+}
+
+// Project 3, Part 2: print the name, pid and state of every
+// RUNNING or SLEEPING process. Each proc's state is protected
+// by its own p->lock (xv6-riscv's equivalent of ptable.lock),
+// so take it before reading, just as scheduler() does.
+int
+crsp(void)
+{
+  struct proc *p;
+  char *state;
+
+  for (p = proc; p < &proc[NPROC]; p++) {
+    acquire(&p->lock);
+    if (p->state == RUNNING || p->state == SLEEPING) {
+      state = (p->state == RUNNING) ? "RUNNING" : "SLEEPING";
+      printk("%s\t%d\t%s\n", p->name, p->pid, state);
+    }
+    release(&p->lock);
+  }
+  return 0;
 }
